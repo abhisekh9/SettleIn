@@ -1,6 +1,6 @@
 "use client";
 
-import Headers from "@/components/Headers";
+import Header from "@/components/Headers";
 import Loading from "@/components/Loading";
 import {
   Table,
@@ -46,7 +46,7 @@ const PropertyTenants = () => {
   };
 
   return (
-    <div className="dashboard-container">
+    <div className="dashboard-container px-4 md:px-6 lg:px-8 mt-4">
       {/* Back to properties page */}
       <Link
         href="/managers/properties"
@@ -57,7 +57,7 @@ const PropertyTenants = () => {
         <span>Back to Properties</span>
       </Link>
 
-      <Headers
+      <Header
         title={property?.name || "My Property"}
         subtitle="Manage tenants and leases for this property"
       />
@@ -95,60 +95,70 @@ const PropertyTenants = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leases?.map((lease) => (
-                  <TableRow key={lease.id} className="h-24">
-                    <TableCell>
-                      <div className="flex items-center space-x-3">
-                        <Image
-                          src="/landing-i1.png"
-                          alt={lease.tenant.name}
-                          width={40}
-                          height={40}
-                          className="rounded-full"
-                        />
-                        <div>
-                          <div className="font-semibold">
-                            {lease.tenant.name}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {lease.tenant.email}
+                {leases && leases.length > 0 ? (
+                  leases.map((lease) => (
+                    <TableRow key={lease.id} className="h-24">
+                      <TableCell>
+                        <div className="flex items-center space-x-3">
+                          <Image
+                            src="/landing-i1.png"
+                            alt={lease.tenant.name}
+                            width={40}
+                            height={40}
+                            className="rounded-full"
+                          />
+                          <div>
+                            <div className="font-semibold">
+                              {lease.tenant.name}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {lease.tenant.email}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        {new Date(lease.startDate).toLocaleDateString()} -
-                      </div>
-                      <div>{new Date(lease.endDate).toLocaleDateString()}</div>
-                    </TableCell>
-                    <TableCell>${lease.rent.toFixed(2)}</TableCell>
-                    <TableCell>
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                          getCurrentMonthPaymentStatus(lease.id) === "Paid"
-                            ? "bg-green-100 text-green-800 border-green-300"
-                            : "bg-red-100 text-red-800 border-red-300"
-                        }`}
-                      >
-                        {getCurrentMonthPaymentStatus(lease.id) === "Paid" && (
-                          <Check className="w-4 h-4 inline-block mr-1" />
-                        )}
-                        {getCurrentMonthPaymentStatus(lease.id)}
-                      </span>
-                    </TableCell>
-                    <TableCell>{lease.tenant.phoneNumber}</TableCell>
-                    <TableCell>
-                      <button
-                        className={`border border-gray-300 text-gray-700 py-2 px-4 rounded-md flex 
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          {new Date(lease.startDate).toLocaleDateString()} -
+                        </div>
+                        <div>
+                          {new Date(lease.endDate).toLocaleDateString()}
+                        </div>
+                      </TableCell>
+                      <TableCell>${lease.rent.toFixed(2)}</TableCell>
+                      <TableCell>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                            getCurrentMonthPaymentStatus(lease.id) === "Paid"
+                              ? "bg-green-100 text-green-800 border-green-300"
+                              : "bg-red-100 text-red-800 border-red-300"
+                          }`}
+                        >
+                          {getCurrentMonthPaymentStatus(lease.id) === "Paid" && (
+                            <Check className="w-4 h-4 inline-block mr-1" />
+                          )}
+                          {getCurrentMonthPaymentStatus(lease.id)}
+                        </span>
+                      </TableCell>
+                      <TableCell>{lease.tenant.phoneNumber}</TableCell>
+                      <TableCell>
+                        <button
+                          className={`border border-gray-300 text-gray-700 py-2 px-4 rounded-md flex 
                       items-center justify-center font-semibold hover:bg-primary-700 hover:text-primary-50`}
-                      >
-                        <ArrowDownToLine className="w-4 h-4 mr-1" />
-                        Download Agreement
-                      </button>
+                        >
+                          <ArrowDownToLine className="w-4 h-4 mr-1" />
+                          Download Agreement
+                        </button>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                      No leases found for this property.
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </div>

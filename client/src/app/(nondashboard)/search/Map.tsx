@@ -57,11 +57,11 @@ const Map = () => {
       if (path) path.setAttribute("fill", "#000000");
     });
 
-    const resizeMap = () => {
-      if(map) setTimeout(() =>  map.resize(), 700);
-    };
+    // const resizeMap = () => {
+    //   if(map) setTimeout(() =>  map.resize(), 700);
+    // };
 
-    resizeMap();
+    // resizeMap();
     
     return () => map.remove();
   }, [isLoading, isError, properties, filters.coordinates]);

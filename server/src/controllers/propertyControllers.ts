@@ -10,6 +10,10 @@ const prisma = new PrismaClient();
 
 const s3Client = new S3Client({
   region: process.env.AWS_REGION,
+  // credentials: {
+  //   accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+  //   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  // },
 });
 
 export const getProperties = async (
@@ -190,10 +194,7 @@ export const getProperty = async (
   }
 };
 
-export const createProperty = async (
-  req: Request,
-  res: Response
-): Promise<void> => {
+export const createProperty = async (req: Request, res: Response): Promise<void> => {
   try {
     const files = req.files as Express.Multer.File[];
     const {
@@ -206,6 +207,7 @@ export const createProperty = async (
       ...propertyData
     } = req.body;
 
+    // Upload images to S3
     // const photoUrls = await Promise.all(
     //   files.map(async (file) => {
     //     const uploadParams = {
@@ -224,51 +226,46 @@ export const createProperty = async (
     //   })
     // );
 
-    const geocodingUrl = `https://nominatim.openstreetmap.org/search?${new URLSearchParams(
-      {
-        street: address,
-        city,
-        country,
-        postalcode: postalCode,
-        format: "json",
-        limit: "1",
-      }
-    ).toString()}`;
-    const geocodingResponse = await axios.get(geocodingUrl, {
-      headers: {
-        "User-Agent": "RealEstateApp (justsomedummyemail@gmail.com",
-      },
-    });
-    const [longitude, latitude] =
-      geocodingResponse.data[0]?.lon && geocodingResponse.data[0]?.lat
-        ? [
-            parseFloat(geocodingResponse.data[0]?.lon),
-            parseFloat(geocodingResponse.data[0]?.lat),
-          ]
-        : [0, 0];
+    // Get coordinates from OpenStreetMap
+    const fullAddress = `${address}, ${city}, ${state}, ${postalCode}, ${country}`;
+    const geocodingUrl = `https://nominatim.openstreetmap.org/search?${new URLSearchParams({
+    q: fullAddress,
+    format: "json",
+    limit: "1",
+}).toString()}`;
 
-    // create location
+const geocodingResponse = await axios.get(geocodingUrl, {
+  headers: {
+    "User-Agent": "RealEstateApp (justsomedummyemail@gmail.com)",
+  },
+});
+
+const [longitude, latitude] =
+  geocodingResponse.data[0]?.lon && geocodingResponse.data[0]?.lat
+    ? [
+        parseFloat(geocodingResponse.data[0].lon),
+        parseFloat(geocodingResponse.data[0].lat),
+      ]
+    : [0, 0];
+
+    console.log('Geocoded coords:', longitude, latitude);
+    // ✅ Step 1: Insert location using raw SQL to set geometry
     const [location] = await prisma.$queryRaw<Location[]>`
       INSERT INTO "Location" (address, city, state, country, "postalCode", coordinates)
-      VALUES (${address}, ${city}, ${state}, ${country}, ${postalCode}, ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326))
+      VALUES (${address}, ${city}, ${state}, ${country}, ${postalCode},
+        ST_SetSRID(ST_MakePoint(${longitude}, ${latitude}), 4326))
       RETURNING id, address, city, state, country, "postalCode", ST_AsText(coordinates) as coordinates;
     `;
 
-    // create property
+    // ✅ Step 2: Create the property
     const newProperty = await prisma.property.create({
       data: {
         ...propertyData,
-        // photoUrls,
         locationId: location.id,
+        // photoUrls,
         managerCognitoId,
-        amenities:
-          typeof propertyData.amenities === "string"
-            ? propertyData.amenities.split(",")
-            : [],
-        highlights:
-          typeof propertyData.highlights === "string"
-            ? propertyData.highlights.split(",")
-            : [],
+        amenities: typeof propertyData.amenities === "string" ? propertyData.amenities.split(",") : [],
+        highlights: typeof propertyData.highlights === "string" ? propertyData.highlights.split(",") : [],
         isPetsAllowed: propertyData.isPetsAllowed === "true",
         isParkingIncluded: propertyData.isParkingIncluded === "true",
         pricePerMonth: parseFloat(propertyData.pricePerMonth),
@@ -277,9 +274,6 @@ export const createProperty = async (
         beds: parseInt(propertyData.beds),
         baths: parseFloat(propertyData.baths),
         squareFeet: parseInt(propertyData.squareFeet),
-
-        isPublished: true,
-        availableFrom: new Date(),
       },
       include: {
         location: true,
@@ -289,8 +283,36 @@ export const createProperty = async (
 
     res.status(201).json(newProperty);
   } catch (err: any) {
-    res
-      .status(500)
-      .json({ message: `Error creating property: ${err.message}` });
+    console.error("Error in createProperty:", err);
+    res.status(500).json({ message: `Error creating property: ${err.message}` });
+  }
+};
+
+
+export const getLeasesByPropertyId = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const propertyId = parseInt(req.params.id);
+
+    if (isNaN(propertyId)) {
+      res.status(400).json({ message: "Invalid propertyId in params." });
+    }
+
+    const leases = await prisma.lease.findMany({
+      where: {
+        propertyId,
+      },
+      include: {
+        tenant: true,       // include tenant details
+        application: true,  // include related application (optional)
+        payments: true,     // include all payment records
+        property: true,     // include property info (optional)
+      },
+    });
+    res.status(200).json(
+      leases,
+    );
+  } catch (error) {
+    console.error("Error fetching leases:", error);
+    res.status(500).json({ message: "Server error while fetching leases." });
   }
 };

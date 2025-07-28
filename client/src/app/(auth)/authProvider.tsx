@@ -20,9 +20,9 @@ const components = {
         return (
             <View className="mt-4 mb-7">
                 <Heading level={3} className="! text-2xl !font-bold">
-                    RENT
+                    Settle
                     <span className="text-secondary-500 font-light hover:!text-primary-300">
-                        IFUL
+                        IN
                     </span>
                 </Heading>
                 <p className="text-muted-foreground mt-2">
@@ -117,7 +117,7 @@ const formFields = {
         },
         password: {
             order: 3,
-            placeholder: "Enter your password",
+            placeholder: "Create a password",
             label: "Password",
             isRequired: true
         },
@@ -135,14 +135,14 @@ const Auth = ({children}: {children: React.ReactNode}) => {
     const pathname = usePathname();
 
     const isAuthPage = pathname.match(/^\/(signin|signup)$/);
-    const isDashboardPage = pathname.startsWith("/manager") || pathname.startsWith("/tenants");
+    const isDashboardPage = pathname.startsWith("/managers") || pathname.startsWith("/tenants");
 
     useEffect(() => {
         if(user && isAuthPage){
             router.push("/")
         }
 
-    },[user, isAuthPage, router]);
+    },[user, isAuthPage,isDashboardPage, router]);
 
     if(!isAuthPage && ! isDashboardPage){
         return <>{children}</>
