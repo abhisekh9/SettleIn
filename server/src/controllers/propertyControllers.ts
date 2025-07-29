@@ -208,23 +208,23 @@ export const createProperty = async (req: Request, res: Response): Promise<void>
     } = req.body;
 
     // Upload images to S3
-    // const photoUrls = await Promise.all(
-    //   files.map(async (file) => {
-    //     const uploadParams = {
-    //       Bucket: process.env.S3_BUCKET_NAME!,
-    //       Key: `properties/${Date.now()}-${file.originalname}`,
-    //       Body: file.buffer,
-    //       ContentType: file.mimetype,
-    //     };
+    const photoUrls = await Promise.all(
+      files.map(async (file) => {
+        const uploadParams = {
+          Bucket: process.env.S3_BUCKET_NAME!,
+          Key: `properties/${Date.now()}-${file.originalname}`,
+          Body: file.buffer,
+          ContentType: file.mimetype,
+        };
 
-    //     const uploadResult = await new Upload({
-    //       client: s3Client,
-    //       params: uploadParams,
-    //     }).done();
+        const uploadResult = await new Upload({
+          client: s3Client,
+          params: uploadParams,
+        }).done();
 
-    //     return uploadResult.Location;
-    //   })
-    // );
+        return uploadResult.Location;
+      })
+    );
 
     // Get coordinates from OpenStreetMap
     const fullAddress = `${address}, ${city}, ${state}, ${postalCode}, ${country}`;
@@ -262,7 +262,7 @@ const [longitude, latitude] =
       data: {
         ...propertyData,
         locationId: location.id,
-        // photoUrls,
+        photoUrls,
         managerCognitoId,
         amenities: typeof propertyData.amenities === "string" ? propertyData.amenities.split(",") : [],
         highlights: typeof propertyData.highlights === "string" ? propertyData.highlights.split(",") : [],
